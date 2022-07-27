@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+    <!-- Bulma CSS 링크 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.1/css/bulma.min.css">
+
+    <meta property="og:title" content="나만의 항해 블로그"/>
+    <meta property="og:description" content="항해99 spring PJ"/>
+    <meta property="og:image" content="images/og_img.jpg"/>
+
+    <!--===============================================================================================-->
+    <link rel="stylesheet" href="/main.css">
+    <!--===============================================================================================-->
+
+    <title>항해99 과제게시판</title>
+
+</head>
+<body>
+<div class="limiter">
+    <div class="container-table100">
+        <div>
+            <img id="banner" src="./images/banner_img.png" alt="">
+        </div>
+        <div class="container-table100">
+            <div class="wrap-table100">
+                <div class="table100 ver1 m-b-110">
+                    <div class="table100-head">
+                        <table>
+                            <thead>
+                            <tr class="row100 head">
+                                <th class="cell100 column1">제목</th>
+                                <th class="cell100 column2">작성자명</th>
+                                <th class="cell100 column3">작성날짜</th>
+                                <th class="cell100 column4">삭제</th>
+                            </tr>
+                            </thead>
+                        </table>
+                    </div>
+                    <div class="table100-body js-pscroll" id="board_list">
+
+                    </div>
+                </div>
+                <div>
+                    <button class="button" id="modal_btn">글쓰기</button>
+                </div>
+            </div>
+
+            <!-- 글쓰기 모달-->
+            <div class="modal">
+                <div class="modal-background"></div>
+                <div class="modal-card">
+                    <header class="modal-card-head">
+                        <p class="modal-card-title">포스팅 작성하기</p>
+                        <button class="delete" aria-label="close"></button>
+                    </header>
+                    <section class="modal-card-body">
+                        <div class="field">
+                            <label class="label">제목</label>
+                            <div class="control">
+                                <input class="input" id="title" type="text" placeholder="제목을 입력해주세요">
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label class="label">작성자</label>
+                            <div class="control">
+                                <input class="input" id="username" type="text" placeholder="이름을 입력해주세요">
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label class="label">비밀번호</label>
+                            <div class="control">
+                                <input class="input" id="password" type="password" placeholder="비밀번호를 입력해주세요">
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label class="label">내용</label>
+                            <div class="control">
+                                <textarea class="textarea" id="contents" placeholder="내용을 작성해주세요"></textarea>
+                            </div>
+                        </div>
+                    </section>
+                    <footer class="modal-card-foot">
+                        <button onclick="writePost()" class="button is-success">작성 완료</button>
+                        <button class="button is-cancel">취소</button>
+                    </footer>
+                </div>
+            </div>
+            <!-- detail 모달-->
+            <div class="modal" id="modal_detail" style="display: none">
+                <div class="modal-background"></div>
+                <div class="modal-card" id="detail_page">
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!--===============================================================================================-->
+<script>
+
+    $(document).ready(function () {
+        // HTML 문서를 로드할 때마다 실행합니다.
+        getMessages();
+    })
+
+    window.onload = function () {
+        document.getElementById('modal_btn').addEventListener('click', onClick);
+        document.querySelector('.is-cancel').addEventListener('click', offClick);
+        document.querySelector('.delete').addEventListener('click', offClick);
+    }
+
+    function onClick() {
+        document.querySelector('.modal').style.display = 'block';
+        document.querySelector('.modal_wrap').style.display='block';
+        document.querySelector('.black_bg').style.display='block';
+    }
+
+    function offClick() {
+        document.querySelector('.modal').style.display = 'none';
+        window.location.reload();
+    }
+    // document.getElementById('${id}-modal_btn').addEventListener('click',onClick);
+    // document.querySelector('.modal_close').addEventListener('click',offClick);
+
+    function onClick_detail() {
+        document.getElementById('modal_detail').style.display = 'block';
+    }
+
+    function offClick_detail() {
+        document.getElementById('modal_detail').style.display = 'none';
+    }
+
+    function offClick_detail_fix() {
+        const modal = document.getElementById("modal")
+        const btnModal = document.getElementById("btn-modal")
+        btnModal.addEventListener("click", e => {
+            modal.style.display = "flex"
+        })
+    }
+
+
+    // 메모를 불러와서 보여줍니다.
+    function getMessages() {
+        // $('#posting_list').empty();
+        // 2. 메모 목록을 불러와서 HTML로 붙입니다.
+        $.ajax({
+            type: 'GET',
+            url: '/api/boards',
+            success: function (response) {
+                for (let i = 0; i < response.length; i++) {
+                    let message = response[i];
+                    let id = message['id'];
+                    let title = message['title']
+                    let username = message['username'];
+                    let modifiedAt = message['modifiedAt'];
+                    addHTML(id, title, username, modifiedAt);
+                }
+            }
+        })
+    }
+
+    // 메모 하나를 HTML로 만들어서 body 태그 내 원하는 곳에 붙입니다.
+    function addHTML(id, title, username, modifiedAt) {
+        // 1. HTML 태그를 만듭니다.
+        let tempHtml = `<table>
+                                <tr class="row100 body" id="${id}-list">
+                                    <td class="cell100 column1" id="${id}-title"><a onclick="detail(${id})" id="detail_link">${title}</a></td>
+                                    <td class="cell100 column2" id="${id}-username">${username}</td>
+                                    <td class="cell100 column3" id="${id}-createdAt">${modifiedAt}</td>
+<!--                                    <td class="cell100 column4"><button class="button is-danger" id="${id}-delete" onclick="deleteOne('${id}')">삭제</button></td>-->
+                                    <td class="cell100 column4"><button class="button is-danger" id="${id}-modal_btn" onclick="deleteOne('${id}')">삭제</button>
+
+                                    </td>
+
+                                </tr>
+                          </table>`
+        // 2. #cards-box 에 HTML을 붙인다.
+        $('#board_list').append(tempHtml);
+    }
+
+
+    // password 기능 구현
+    // function checkPassword(password){
+    //     let password = '';
+    //     let passwordcheck = message['password']
+    //     if(password != )
+    //         alert("비번을 다시 입력해주세요")
+    //     else{
+    //         alert('비번이 확인 되었습니다.')
+    //     }
+    //     password = 확인한 password값
+    //     return password;
+    // }
+
+
+    // 메모를 생성합니다.
+    function writePost() {
+        // 1. 작성한 내용 가져오기
+        let title = $('#title').val();
+        let username = $('#username').val();
+        let contents = $('#contents').val();
+        let password = $('#password').val();
+
+        //2. 입력값 확인
+        if (title == '' && username == '' && contents == '' && password == '') {
+            // alert 창 띄우기
+            alert("내용을 입력해주세요")
+            return;
+        }
+        // 3. 전달할 data JSON으로
+        let data = {'title': title, 'username': username, 'contents': contents, 'password': password};
+        // 4. POST /api/postings 에 data를 전달
+        $.ajax({
+            type: "POST",
+            url: "/api/boards",
+            contentType: "application/json", // JSON 형식으로 전달함을 알리기
+            data: JSON.stringify(data),
+            success: function (response) {
+                alert('메시지가 성공적으로 작성되었습니다.');
+                window.location.reload();
+            }
+        });
+    }
+
+    // 포스팅 상세페이지
+    function detail(id) {
+        $('#detail_page').empty();
+        $.ajax({
+            type: 'GET',
+            url: '/api/boards/' + id,
+            success: function (response) {
+                if (response['id'] == id) {
+                    let id = response['id'];
+                    let title = response['title']
+                    let username = response['username'];
+                    let contents = response['contents'];
+                    let password = response['password'];
+                    detailPage(id, title, username, contents, password);
+                    onClick_detail()
+                }
+            }
+        })
+    }
+
+    function detailPage(id, title, username, contents) {
+        // 1. HTML 태그를 만듭니다.
+        let tempHtml = `<div>
+                                <header class="modal-card-head">
+                                    <p class="modal-card-title" id="${id}-title">${title}</p>
+                                    <button class="delete" onclick="offClick_detail()" aria-label="close"></button>
+                                </header>
+                                <section class="modal-card-body">
+                                    <p><h6 id="${id}-username">작성자 : ${username}</h6></p>
+                                    <br>
+
+                                    <p><h4 id="${id}-contents">작성내용 : ${contents}</h4></p>
+                                </section>
+
+                                <footer class="modal-card-foot">
+                                    <button class="button is-cancel" onclick="offClick_detail()">닫기</button>
+                                    <button class="button is-fix" onclick="offClick_detail_fix()">수정</button>
+                                </footer>
+                            </div>`
+        // 2. #detail_page에 HTML을 붙인다.
+        $('#detail_page').append(tempHtml);
+    }
+
+    // 메모를 삭제합니다.(password 함수 걸어야함)
+    function deleteOne(id) {
+        $.ajax({
+            type: "DELETE",
+            url: `/api/boards/${id}`,
+            success: function (response) {
+                alert("button기능부터 꼬여서 망했습니다, 앞단은 저에게 너무 큰 벽이네요ㅜㅜ")
+                window.location.reload();
+            }
+        })
+    }
+
+
+</script>
+
+
+</body>
+</html>
