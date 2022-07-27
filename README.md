@@ -1,5 +1,8 @@
 # board_project
 나만의 항해 블로그(게시판)를 만들어보기
+-------------------------------
+## API 설계
+![1](https://user-images.githubusercontent.com/107388110/181154151-de568a4e-c8dd-40a6-9ff7-fe2659befbe6.PNG)
 
 ------------------------
 ## 결론부터 말하자면 폭망
